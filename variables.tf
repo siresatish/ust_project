@@ -3,7 +3,7 @@ variable "cidr" {
 }
 
 variable "cidr_sub1" {
-    default = "10.1.0.0/24"
+    default = "10.0.0.0/26"
 }
 
 variable "sub1_availability_zone" {

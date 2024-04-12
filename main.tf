@@ -6,7 +6,7 @@ resource "aws_vpc" "myvpc" {
 }
 
 resource "aws_vpc" "peervpc" {
-    cidr_block = "10.4.0.0/20"
+    cidr_block = "192.0.0.0/20"
     tags = {
       Name = "peerVPC"
     }
@@ -93,7 +93,8 @@ resource "aws_autoscaling_group" "myasg" {
     min_size = 3
     max_size = 3
     desired_capacity = 3
-    vpc_zone_identifier = [ aws_subnet.sub1.id ]
+    vpc_zone_identifier = [aws_subnet.sub1.id]
+    load_balancers  = [aws_elb.example_elb.name]
 
     tag {
       key = "Name"
@@ -107,7 +108,7 @@ resource "aws_launch_configuration" "mylc" {
     name = "asglc"
     image_id = "ami-09c8d5d747253fb7a"
     instance_type = "t2.micro"
-    security_groups = [ aws_security_group.websg.id ]
+    security_groups = [aws_security_group.websg.id]
     user_data = <<-EOF
                  #!/bin/bash
                  echo "Hello, World!" > index.html
@@ -121,7 +122,6 @@ resource "aws_launch_configuration" "mylc" {
 
 resource "aws_elb" "example_elb" {
   name               = "asgelb"
-  availability_zones = ["ap-southeast-2a", "ap-southeast-2b", "ap-southeast-2c"]
   listener {
     instance_port     = 80
     instance_protocol = "http"
@@ -137,37 +137,21 @@ resource "aws_elb" "example_elb" {
     healthy_threshold   = 2
   }
 
-    instances = aws_instance.myInstance[*].id
+  security_groups = [aws_security_group.websg.id]
+  subnets         = [aws_subnet.sub1.id]
+
 }
 
-resource "aws_instance" "asg_instances" {
-  count              = 3
-  ami                = "ami-09c8d5d747253fb7a"  # Update with your desired AMI ID
-  instance_type      = "t2.micro"        # Update with your desired instance type
-  security_groups    = [aws_security_group.websg.id]
-  user_data          = <<-EOF
-                        #!/bin/bash
-                        echo "Hello, World!" > index.html
-                        nohup python -m SimpleHTTPServer 80 &
-                        EOF
-
-  tags = {
-    Name = "asg-instance-${count.index}"
-  }
-}
 
 resource "aws_network_interface" "myvnet0" {
     subnet_id = aws_subnet.sub1.id
-    private_ips = [ "10.1.4.89" ]
+    private_ips = ["10.0.0.26"]
   tags = {
     Name = "vnet0"
   }
 }
 
-resource "aws_s3_bucket" "myBucket" {
-    bucket = "terraformpipproject"
-  
-}
+
 
 resource "aws_key_pair" "MyKey" {
     key_name = "tfkey"
